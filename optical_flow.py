@@ -196,7 +196,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="OpenCV CPU/GPU Comparison")
 
     parser.add_argument(
-        "--video", help="path to .mp4 video file", required=True, type=str,
+        "--video", help="path to .mp4 video file", type=str,
+        default="./data/d1_im.mp4",
     )
 
     # parsing script arguments
