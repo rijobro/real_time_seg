@@ -53,7 +53,7 @@ def get_flow_cpu(previous_frame, current_frame, hsv):
     # convert hsv to bgr
     bgr_cpu = cv2.cvtColor(hsv_8u, cv2.COLOR_HSV2BGR)
 
-    return bgr_cpu
+    return bgr_cpu, flow
 
 def get_flow_gpu(gpu_previous, gpu_current, gpu_h, gpu_s, gpu_hsv, gpu_hsv_8u):
 
@@ -99,7 +99,30 @@ def get_flow_gpu(gpu_previous, gpu_current, gpu_h, gpu_s, gpu_hsv, gpu_hsv_8u):
 
     return bgr_gpu
 
-def main(video):
+def warp_flow_cpu(img, flow):
+    h, w = flow.shape[:2]
+    flow = -flow
+    flow[:,:,0] += np.arange(w)
+    flow[:,:,1] += np.arange(h)[:,np.newaxis]
+    res = cv2.remap(img, flow, None, cv2.INTER_LINEAR)
+    return res
+
+def add_text(image, texts):
+    font = cv2.FONT_HERSHEY_SIMPLEX
+    font_size = font_thickness = 3
+    font_color = (0, 255, 26)
+    for row in range(len(texts)):
+        for col in range(len(texts[0])):
+            text = texts[row][col]
+            x = int(image.shape[1] / len(texts[0]) * col)
+            y = int(image.shape[0] / len(texts) * row) + 100
+            image = cv2.putText(
+                image, text, (x,y), font, font_size, font_color, font_thickness, cv2.LINE_AA)
+    return image
+
+
+
+def main(video, seg):
     # set up window for results
     window_name = "result"
     get_window(window_name)
@@ -109,28 +132,33 @@ def main(video):
 
     # init video capture with video
     cap = cv2.VideoCapture(video)
+    cap_seg = cv2.VideoCapture(seg)
 
     # get default video FPS
     fps = cap.get(cv2.CAP_PROP_FPS)
 
     # get total number of video frames
     num_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+    num_frames_seg = int(cap_seg.get(cv2.CAP_PROP_FRAME_COUNT))
+    if num_frames != num_frames_seg:
+        raise RuntimeError
 
     # read the first frame
-    cpu_frame_bgr, old_cpu_frame_gray = get_next_frame(cap, im_size)
+    old_cpu_frame_bgr, old_cpu_frame_gray = get_next_frame(cap, im_size)
+    old_cpu_frame_seg_bgr, _ = get_next_frame(cap_seg, im_size)
 
     # create hsv output for optical flow and set saturation to 1
-    cpu_hsv = np.zeros_like(cpu_frame_bgr, np.float32)
+    cpu_hsv = np.zeros_like(old_cpu_frame_bgr, np.float32)
     cpu_hsv[..., 1] = 1.0
 
     if HAS_GPU:
 
         # upload resized frame to GPU
         gpu_frame_bgr = cv2.cuda_GpuMat()
-        gpu_frame_bgr.upload(cpu_frame_bgr)
+        gpu_frame_bgr.upload(old_cpu_frame_bgr)
 
         # convert to gray
-        old_cpu_frame_gray = cv2.cvtColor(cpu_frame_bgr, cv2.COLOR_BGR2GRAY)
+        old_cpu_frame_gray = cv2.cvtColor(old_cpu_frame_bgr, cv2.COLOR_BGR2GRAY)
 
         # upload pre-processed frame to GPU
         old_gpu_frame_gray = cv2.cuda_GpuMat()
@@ -146,16 +174,16 @@ def main(video):
         gpu_s.upload(np.ones_like(old_cpu_frame_gray, np.float32))
 
 
-    for _ in range(min(num_frames, 10)):
+    for f in range(1, num_frames):
 
         # read the next frame
         cpu_frame_bgr, new_cpu_frame_gray = get_next_frame(cap, im_size)
+        new_cpu_frame_seg_bgr, _ = get_next_frame(cap_seg, im_size)
 
         # get CPU flow
-        bgr_cpu = get_flow_cpu(old_cpu_frame_gray, new_cpu_frame_gray, cpu_hsv)
+        bgr_cpu, flow_cpu = get_flow_cpu(old_cpu_frame_gray, new_cpu_frame_gray, cpu_hsv)
 
-        # update previous_frame value
-        old_cpu_frame_gray = new_cpu_frame_gray
+        pred_cpu_frame_seg_bgr = warp_flow_cpu(old_cpu_frame_seg_bgr, flow_cpu)
 
         if HAS_GPU:
 
@@ -168,17 +196,28 @@ def main(video):
             # get GPU flow
             bgr_gpu = get_flow_gpu(old_gpu_frame_gray, new_gpu_frame_gray, gpu_h, gpu_s, gpu_hsv, gpu_hsv_8u)
 
-            # update previous_frame value
-            old_gpu_frame_gray = new_gpu_frame_gray
-
         # visualization
-        result = cv2.hconcat([cpu_frame_bgr, bgr_cpu])
+        to_imshow = [[old_cpu_frame_bgr, cpu_frame_bgr, bgr_cpu],
+                     [old_cpu_frame_seg_bgr, new_cpu_frame_seg_bgr, pred_cpu_frame_seg_bgr]]
+        names = [[f"prev. frame ({f-1})", f"current frame ({f})", "opt. flow"],
+                 [f"prev. label ({f-1})", f"current label ({f})", "prev. warped w/ opt. flow"]]
+        result = cv2.vconcat([cv2.hconcat(list_h) for list_h in to_imshow])
         if HAS_GPU:
             result = cv2.hconcat([result, bgr_gpu])
+        result = add_text(result, names)
         cv2.imshow(window_name, result)
+        # if f > 28:
+            # input("Press any key to advance to next image.")
         k = cv2.waitKey(1)
         if k == 27:
             break
+
+        # update previous_frame value
+        old_cpu_frame_gray = new_cpu_frame_gray
+        old_cpu_frame_bgr = cpu_frame_bgr
+        old_cpu_frame_seg_bgr = new_cpu_frame_seg_bgr
+        if HAS_GPU:
+            old_gpu_frame_gray = new_gpu_frame_gray
 
     # release the capture
     cap.release()
@@ -200,13 +239,20 @@ if __name__ == "__main__":
         default="./data/d1_im.mp4",
     )
 
+    parser.add_argument(
+        "--seg", help="path to segmented .mp4 video file", type=str,
+        default="./data/d1_seg.mp4",
+    )
+
     # parsing script arguments
     args = parser.parse_args()
     video = args.video
+    seg = args.seg
 
     # output passed arguments
     print("Configuration")
     print("- video file : ", video)
+    print("- seg file : ", seg)
 
     # run pipeline
-    main(video)
+    main(video, seg)
