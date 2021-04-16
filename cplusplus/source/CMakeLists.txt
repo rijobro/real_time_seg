@@ -4,10 +4,13 @@ project(${proj})
 
 set(CMAKE_CXX_STANDARD 14)
 
-find_package( OpenCV REQUIRED )
-
 add_executable(${proj} video_seg.cpp)
 
-target_link_directories(${proj} PUBLIC "${OPENCV_LIB_DIR}")
+# pytorch
+find_package(Torch REQUIRED)
+target_link_libraries(${proj} "${TORCH_LIBRARIES}")
+
+# opencv
+find_package(OpenCV REQUIRED)
+#target_link_libraries(${proj} opencv_videoio)
 target_link_libraries(${proj} ${OpenCV_LIBS})
-target_include_directories(${proj} PUBLIC ${OpenCV_INCLUDE_DIR})

@@ -1,3 +1,4 @@
 
 .vscode/
-cplusplus/build
+build/*
+*.user
