@@ -34,7 +34,9 @@ void get_next_frame(cv::VideoCapture &cap, cv::Mat &frame, const cv::Size &size)
 const at::Tensor cv2mat_to_tensor(const cv::Mat &img, const at::Device &device, const bool channel_first=true, const bool unsqueeze=true)
 {
     // opencv -> torch
-    at::Tensor tensor_image = torch::from_blob(img.data, { img.rows, img.cols, 3 }, at::kFloat);
+    cv::Mat mat_float;
+    img.convertTo(mat_float, CV_32F);
+    at::Tensor tensor_image = torch::from_blob(mat_float.data, { img.rows, img.cols, 3 }, at::kFloat);
 
     // to device
     tensor_image.to(device);
@@ -64,7 +66,6 @@ int main(int argc, char** argv)
 
     // determine device
     const at::Device device(torch::cuda::is_available() ? "cuda:0" : "cpu");
-//    const at::Device device("cpu");
     std::cout << "\ndevice: " << device << "\n";
 
     // load torch model
@@ -91,10 +92,7 @@ int main(int argc, char** argv)
         }
 
         // infer
-        std::vector<torch::jit::IValue> inputs;
-        inputs.push_back(tensor);
-
-        at::Tensor output = module.forward(inputs).toTensor();
+        at::Tensor output = module.forward(std::vector<torch::jit::IValue>({tensor})).toTensor();
         if (i==0)
             std::cout << "output shape: " << output.sizes() << std::endl;
         exit(0);
