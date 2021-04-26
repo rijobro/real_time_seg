@@ -41,7 +41,7 @@ const at::Tensor cv2mat_to_tensor(const cv::Mat &img, const at::Device &device, 
 
     // move channel from end to first
     if (channel_first)
-        tensor_image = tensor_image.moveaxis(-1, 0);
+        tensor_image = tensor_image.movedim(-1, 0);
 
     // if desired, unsqueeze
     if (unsqueeze)
