@@ -60,15 +60,6 @@ def main(video_fname, model_path, device, pre_process_5_frames):
     print(f"\ndevice: {device}\n")
 
     model = torch.jit.load(model_path)
-    # model = MyUNet(
-    #     dimensions=2,
-    #     in_channels=3,
-    #     out_channels=1,
-    #     channels=(16, 32, 64, 128, 256),
-    #     strides=(2, 2, 2, 2),
-    #     num_res_units=2,
-    # )
-    # model.load_state_dict(torch.load(model_path))
     model.to(device)
     with eval_mode(model):
 

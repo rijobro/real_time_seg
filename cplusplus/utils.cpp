@@ -79,12 +79,12 @@ cv::Mat to_cvmat(const at::Tensor &tensor, const bool channel_last, const bool s
     return cv::Mat(height, width, CV_8UC3);
 }
 
-torch::jit::script::Module load_module(const std::string &fname, const at::Device &device, const bool eval)
+torch::jit::script::Module load_module(const std::string &fname, const at::Device &device)
 {
     torch::jit::script::Module module;
     module = torch::jit::load(fname);
-    if (eval)
-        module.eval();
+    module.eval();
+    torch::NoGradGuard no_grad;
     module.to(device);
     return module;
 }

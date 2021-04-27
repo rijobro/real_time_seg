@@ -14,6 +14,6 @@ void show_image(const cv::Mat& img, const std::string &title);
 
 cv::Mat to_cvmat(const at::Tensor &tensor, const bool channel_last=true, const bool squeeze=true);
 
-torch::jit::script::Module load_module(const std::string &fname, const at::Device &device, const bool eval=true);
+torch::jit::script::Module load_module(const std::string &fname, const at::Device &device);
 
 at::Tensor infer(torch::jit::script::Module &module, const at::Tensor &input);
