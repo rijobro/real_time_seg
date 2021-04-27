@@ -2,30 +2,33 @@
 #include <chrono>
 #include <torch/script.h>
 
-void parse_input(const int argc, char** argv, std::string &video_fname, std::string &model_path)
+void parse_input(const int argc, char** argv, std::string &video_fname, std::string &model_path, at::Device &device)
 {
     const int num_arguments = argc-1;
-    if (num_arguments != 2) {
-        std::cout << "\nusage: " << argv[0] << " video_fname model_path\n";
+    if (num_arguments < 2) {
+        std::cout << "\nusage: " << argv[0] << " video_fname model_path [device]\n";
         exit(1);
     }
 
     video_fname = argv[1];
     model_path = argv[2];
 
+    if (num_arguments >= 3)
+        device = at::Device(argv[3]);
+    else
+        device = at::Device(torch::cuda::is_available() ? "cuda:0" : "cpu");
+
     std::cout << "\nvideo_fname: " << video_fname << "\n";
     std::cout << "model_path: " << model_path << "\n";
+    std::cout << "\ndevice: " << device << "\n\n";
 }
 
 int main(int argc, char** argv)
 {
     // get input params
     std::string video_fname, model_path;
-    parse_input(argc, argv, video_fname, model_path);
-
-    // determine device
-    const at::Device device(torch::cuda::is_available() ? "cuda:0" : "cpu");
-    std::cout << "\ndevice: " << device << "\n\n";
+    at::Device device("cpu");
+    parse_input(argc, argv, video_fname, model_path, device);
 
     // load torch model
     torch::jit::script::Module module = load_module(model_path, device);

@@ -51,12 +51,12 @@ class MyUNet(UNet):
 
 
 
-def main(video_fname, model_path, pre_process_5_frames):
+def main(video_fname, model_path, device, pre_process_5_frames):
 
     print(f"\nvideo_fname: {video_fname}")
     print(f"model_path: {model_path}")
 
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = torch.device(device)
     print(f"\ndevice: {device}\n")
 
     model = torch.jit.load(model_path)
@@ -97,5 +97,6 @@ def main(video_fname, model_path, pre_process_5_frames):
 if __name__ == "__main__":
     vid_fname = sys.argv[1]
     model_path = sys.argv[2]
-    pre_process_5_frames = bool(int(sys.argv[3])) if len(sys.argv) > 3 else False
-    main(vid_fname, model_path, pre_process_5_frames)
+    device = sys.argv[3] if len(sys.argv) > 3 else "cuda" if torch.cuda.is_available() else "cpu"
+    pre_process_5_frames = bool(int(sys.argv[4])) if len(sys.argv) > 4 else False
+    main(vid_fname, model_path, device, pre_process_5_frames)
