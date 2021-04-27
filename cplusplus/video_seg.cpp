@@ -25,7 +25,7 @@ int main(int argc, char** argv)
 
     // determine device
     const at::Device device(torch::cuda::is_available() ? "cuda:0" : "cpu");
-    std::cout << "\ndevice: " << device << "\n";
+    std::cout << "\ndevice: " << device << "\n\n";
 
     // load torch model
     torch::jit::script::Module module = load_module(model_path, device);
@@ -40,7 +40,6 @@ int main(int argc, char** argv)
 
     // loop over frames
     for (int i=0; i<num_frames; ++i) {
-        std::cout << "\nprocessing frame " << i << " of " << num_frames << "\n";
 
         // get next frame and convert to torch tensor
         get_next_frame(cap, frame, cv::Size(1264, 1024));
@@ -58,6 +57,7 @@ int main(int argc, char** argv)
             std::cout << "output shape: " << output.sizes() << std::endl;
     }
 
+    // clock
     auto t_end = std::chrono::steady_clock::now();
     auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(t_end - t_start).count();
     auto fps = float(num_frames) / float(elapsed) * 1000.f;
