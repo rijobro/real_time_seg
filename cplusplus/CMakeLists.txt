@@ -4,7 +4,7 @@ project(${proj})
 
 set(CMAKE_CXX_STANDARD 14)
 
-add_executable(${proj} video_seg.cpp)
+add_executable(${proj} video_seg.cpp utils.cpp)
 
 # pytorch
 find_package(Torch REQUIRED)
