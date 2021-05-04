@@ -11,38 +11,40 @@ from monai.networks.utils import eval_mode
 from monai.transforms import DivisiblePad
 
 
-class LoopDataset(IterableDataset):
-    def __init__(self, video_fname, divisible_pad_factor, device, pre_process_and_loop_5_frames=False):
+class VideoDataset(IterableDataset):
+    def __init__(self, video_fname, divisible_pad_factor, device):
         self.video_path = video_fname
         self.device = device
         self.cap = cv2.VideoCapture(video_fname)
         self.padder = DivisiblePad(divisible_pad_factor)
         self.num_frames = int(self.cap.get(cv2.CAP_PROP_FRAME_COUNT))
-        self.pre_process_and_loop_5_frames = pre_process_and_loop_5_frames
-
-        if pre_process_and_loop_5_frames:
-            self.frames = []
-            for _ in range(5):
-                ret, frame = self.cap.read()
-                if not ret:
-                    raise RuntimeError
-                frame = self.padder(np.moveaxis(frame, -1, 0))[None]
-                self.frames.append(torch.Tensor(frame).to(device))
 
     def __iter__(self):
         for i in range(self.num_frames):
-
-            if self.pre_process_and_loop_5_frames:
-                if i == 0:
-                    frame_iter = cycle(self.frames)
-                frame = next(frame_iter)
-            else:
-                ret, frame = self.cap.read()
-                if not ret:
-                    break
-                frame = torch.Tensor(self.padder(np.moveaxis(frame, -1, 0))[None])
-                frame = frame.to(self.device)
+            ret, frame = self.cap.read()
+            if not ret:
+                break
+            frame = torch.Tensor(self.padder(np.moveaxis(frame, -1, 0))[None])
+            frame = frame.to(self.device)
             yield frame
+
+
+class LoopDataset(VideoDataset):
+    def __init__(self, video_fname, divisible_pad_factor, device):
+        super().__init__(video_fname, divisible_pad_factor, device)
+
+        self.frames = []
+        for _ in range(5):
+            ret, frame = self.cap.read()
+            if not ret:
+                raise RuntimeError
+            frame = self.padder(np.moveaxis(frame, -1, 0))[None]
+            self.frames.append(torch.Tensor(frame).to(device))
+            self.frame_iter = cycle(self.frames)
+
+    def __iter__(self):
+        for _ in range(self.num_frames):
+            yield next(self.frame_iter)
 
 
 
@@ -59,8 +61,8 @@ def main(video_fname, model_path, device, pre_process_5_frames):
     with eval_mode(model):
 
         divisible_pad_factor = 16
-        dataset = LoopDataset(video_fname, divisible_pad_factor,
-                              device, pre_process_5_frames)
+        Dataset = VideoDataset if not pre_process_5_frames else LoopDataset
+        dataset = Dataset(video_fname, divisible_pad_factor, device)
 
         if device==torch.device("cuda"):
             torch.cuda.synchronize()
