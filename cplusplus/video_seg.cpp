@@ -42,14 +42,15 @@ int main(int argc, char** argv)
     auto t_start = std::chrono::steady_clock::now();
 
     // loop over frames
-    for (int i=0; i<num_frames; ++i) {
+    int num_processed_frames = 1;
+    for (; num_processed_frames<=num_frames; ++num_processed_frames) {
 
         // get next frame and convert to torch tensor
         get_next_frame(cap, frame, cv::Size(1264, 1024));
         const at::Tensor tensor = to_tensor(frame, device);
 
         // first time, print info
-        if (i==0) {
+        if (num_processed_frames==1) {
             std::cout << "image shape: " << frame.size() << std::endl;
             std::cout << "tensor shape: " << tensor.sizes() << std::endl;
         }
@@ -63,8 +64,8 @@ int main(int argc, char** argv)
     // clock
     auto t_end = std::chrono::steady_clock::now();
     auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(t_end - t_start).count();
-    auto fps = float(num_frames) / float(elapsed) * 1000.f;
-    std::cout << "processed " << num_frames << " frames at an average of " << fps << " FPS.\n";
+    auto fps = float(num_processed_frames) / float(elapsed) * 1000.f;
+    std::cout << "processed " << num_processed_frames << " frames at an average of " << fps << " FPS.\n";
 
     return 0;
 }
