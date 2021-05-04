@@ -6,15 +6,20 @@ void parse_input(const int argc, char** argv, std::string &video_fname, std::str
 {
     const int num_arguments = argc-1;
     if (num_arguments < 2) {
-        std::cout << "\nusage: " << argv[0] << " video_fname model_path [device]\n";
+        std::cerr << "\nusage: " << argv[0] << " video_fname model_path [device]\n";
         exit(1);
     }
 
     video_fname = argv[1];
     model_path = argv[2];
 
-    if (num_arguments >= 3)
+    if (num_arguments >= 3) {
+        if (strcmp(argv[3], "cpu") != 0 && !torch::cuda::is_available()) {
+            std::cerr << "\ndevice is " << argv[3] << ", but cuda is not available.\n";
+            exit(1);
+        }
         device = at::Device(argv[3]);
+    }
     else
         device = at::Device(torch::cuda::is_available() ? "cuda:0" : "cpu");
 
