@@ -45,11 +45,6 @@ class LoopDataset(IterableDataset):
             yield frame
 
 
-class MyUNet(UNet):
-    def create_jit_model(self, x, method):
-        self.model = method(self.model, x)
-
-
 
 def main(video_fname, model_path, device, pre_process_5_frames):
 
