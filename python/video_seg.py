@@ -40,7 +40,6 @@ class VideoDataset(IterableDataset):
         ret, frame = self.cap.read()
         if not ret:
             raise RuntimeError(f"Failed to read frame {frame}")
-        print("here")
         return self.preprocess_frame(frame)
 
     def __iter__(self):
@@ -82,9 +81,7 @@ def main(video_fname, model_path, device, pre_process_5_frames):
             torch.cuda.synchronize()
         t_start = time.time()
 
-        print("hello there")
         for i, im in enumerate(dataset):
-            print("general kenobi")
             if i == 0:
                 print("tensor shape: ", im.shape)
             output = model(im)
