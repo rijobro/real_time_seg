@@ -62,7 +62,7 @@ int main(int argc, char** argv)
 
         // infer
         at::Tensor output = infer(module, tensor);
-        if (i==0)
+        if (num_processed_frames==1)
             std::cout << "output shape: " << output.sizes() << std::endl;
     }
 
