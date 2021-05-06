@@ -6,13 +6,15 @@
 
 cv::VideoCapture open_vid(const std::string &video_fname);
 
-void get_next_frame(cv::VideoCapture &cap, cv::Mat &frame, const cv::Size &size);
+void get_next_frame(cv::VideoCapture &cap, cv::Mat &frame, const unsigned frame_num);
 
-at::Tensor to_tensor(const cv::Mat &img, const at::Device &device, const bool channel_first=true, const bool unsqueeze=true);
+torch::nn::ZeroPad2d get_padder(const cv::VideoCapture &cap, const unsigned divisible_factor);
+
+at::Tensor to_tensor(const cv::Mat &img, const at::Device &device, torch::nn::ZeroPad2d &padder);
 
 void show_image(const cv::Mat& img, const std::string &title);
 
-cv::Mat to_cvmat(const at::Tensor &tensor, const bool channel_last=true, const bool squeeze=true);
+cv::Mat to_cvmat(const at::Tensor &tensor);
 
 torch::jit::script::Module load_module(const std::string &fname, const at::Device &device);
 

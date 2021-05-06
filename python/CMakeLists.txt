@@ -1,0 +1,1 @@
+install(FILES video_seg.py optical_flow.py DESTINATION ${CMAKE_INSTALL_PREFIX}/bin)

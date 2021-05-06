@@ -41,28 +41,32 @@ int main(int argc, char** argv)
     // read the video file
     cv::Mat frame;
     cv::VideoCapture cap = open_vid(video_fname);
-    const int num_frames = cap.get(cv::CAP_PROP_FRAME_COUNT);
+    const unsigned num_frames = cap.get(cv::CAP_PROP_FRAME_COUNT);
+
+    // Get padder
+    const unsigned divisible_factor = 16;
+    torch::nn::ZeroPad2d padder = get_padder(cap, divisible_factor);
 
     // start clock
     auto t_start = std::chrono::steady_clock::now();
 
     // loop over frames
-    int num_processed_frames = 1;
-    for (; num_processed_frames<=num_frames; ++num_processed_frames) {
+    unsigned num_processed_frames = 0;
+    for (; num_processed_frames<num_frames; ++num_processed_frames) {
 
         // get next frame and convert to torch tensor
-        get_next_frame(cap, frame, cv::Size(1264, 1024));
-        const at::Tensor tensor = to_tensor(frame, device);
+        get_next_frame(cap, frame, num_processed_frames);
+        const at::Tensor tensor = to_tensor(frame, device, padder);
 
         // first time, print info
-        if (num_processed_frames==1) {
+        if (num_processed_frames==0) {
             std::cout << "image shape: " << frame.size() << std::endl;
             std::cout << "tensor shape: " << tensor.sizes() << std::endl;
         }
 
         // infer
         at::Tensor output = infer(module, tensor);
-        if (num_processed_frames==1)
+        if (num_processed_frames==0)
             std::cout << "output shape: " << output.sizes() << std::endl;
     }
 

@@ -12,22 +12,42 @@ cv::VideoCapture open_vid(const std::string &video_fname)
     exit(1);
 }
 
-void get_next_frame(cv::VideoCapture &cap, cv::Mat &frame, const cv::Size &size)
+void get_next_frame(cv::VideoCapture &cap, cv::Mat &frame, const unsigned frame_num)
 {
     // get frame
     cap.read(frame);
 
     // check if we succeeded
     if (frame.empty()) {
-        std::cerr << "Error, failed to grab frame.\n";
+        std::cerr << "Error, failed to grab frame " << frame_num << ".\n";
         exit(1);
     }
-
-    // resize
-    cv::resize(frame, frame, size);
 }
 
-at::Tensor to_tensor(const cv::Mat &img, const at::Device &device, const bool channel_first, const bool unsqueeze)
+int round_up(const unsigned num, const unsigned multiple)
+{
+    assert(multiple);
+    return ((num + multiple -1) / multiple) * multiple;
+}
+
+torch::nn::ZeroPad2d get_padder(const cv::VideoCapture &cap, const unsigned divisible_factor)
+{
+    const unsigned in_w = cap.get(cv::CAP_PROP_FRAME_WIDTH);
+    const unsigned in_h = cap.get(cv::CAP_PROP_FRAME_HEIGHT);
+    const unsigned out_w = round_up(in_w, divisible_factor);
+    const unsigned out_h = round_up(in_h, divisible_factor);
+
+    const unsigned pad_w = out_w - in_w;
+    const unsigned pad_h = out_h - in_h;
+    const unsigned pad_t = pad_h / 2;
+    const unsigned pad_b = pad_h - pad_t;
+    const unsigned pad_l = pad_w / 2;
+    const unsigned pad_r = pad_w - pad_l;
+
+    return torch::nn::ZeroPad2d(torch::nn::ZeroPad2dOptions({pad_l, pad_r, pad_t, pad_b}));
+}
+
+at::Tensor to_tensor(const cv::Mat &img, const at::Device &device, torch::nn::ZeroPad2d &padder)
 {
     at::Tensor tensor_image = torch::from_blob(img.data, { img.rows, img.cols, 3 }, at::kByte);
     tensor_image = tensor_image.to(at::kFloat);
@@ -36,12 +56,12 @@ at::Tensor to_tensor(const cv::Mat &img, const at::Device &device, const bool ch
     tensor_image = tensor_image.to(device);
 
     // move channel from end to first
-    if (channel_first)
-        tensor_image = tensor_image.movedim(-1, 0);
+    tensor_image = tensor_image.movedim(-1, 0);
 
-    // if desired, unsqueeze
-    if (unsqueeze)
-        tensor_image.unsqueeze_(0);
+    // unsqueeze
+    tensor_image.unsqueeze_(0);
+
+    tensor_image = padder->forward(tensor_image);
 
     return tensor_image;
 }
@@ -53,17 +73,15 @@ void show_image(const cv::Mat& img, const std::string &title)
     cv::waitKey(0);
 }
 
-cv::Mat to_cvmat(const at::Tensor &tensor, const bool channel_last, const bool squeeze)
+cv::Mat to_cvmat(const at::Tensor &tensor)
 {
     at::Tensor tensor_mod = tensor;
 
-    // if desired, squeeze first channel
-    if (squeeze)
-        tensor_mod = tensor_mod.squeeze(0);
+    // squeeze first channel
+    tensor_mod = tensor_mod.squeeze(0);
 
-    // if desired, move channel to end
-    if (channel_last)
-        tensor_mod = tensor_mod.movedim(0, -1);
+    // move channel to end
+    tensor_mod = tensor_mod.movedim(0, -1);
 
     const int width = tensor_mod.sizes()[0];
     const int height = tensor_mod.sizes()[1];
