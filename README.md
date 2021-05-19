@@ -23,7 +23,7 @@ UNet(
 
 From the base level, use the following to segment a video file:
 
-```python
+```bash
 python python/video_seg.py \
 	--model_path example_data/models/model_jit.pt \
 	--mode video --video_source example_data/videos/d1_im.mp4
@@ -31,7 +31,7 @@ python python/video_seg.py \
 
 To segment a video file and display the live results:
 
-```python
+```bash
 python python/video_seg.py \
 	--model_path example_data/models/model_jit.pt \
 	--mode video --video_source example_data/videos/d1_im.mp4 --show
@@ -39,7 +39,7 @@ python python/video_seg.py \
 
 To use the webcam 0 and display the live results:
 
-```python
+```bash
 python python/video_seg.py \
 	--model_path example_data/models/model_jit.pt \
 	--mode camera --video_source 0 --max_num_loops 100 --show
