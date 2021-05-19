@@ -3,6 +3,9 @@
 A few small scripts that take a `torch.jit` model and perform segmentation/optical flow.
 
 # Data
+
+![image](https://user-images.githubusercontent.com/33289025/118810048-50389e80-b8a3-11eb-9adc-0788659c88de.png)
+
 The example [video](example_data/videos/d1_im.mp4) and its corresponding [ground truth label](example_data/videos/d1_seg.mp4) were taken from the 2017 MICCAI EndoVis Grand Challenge. They are at 2 FPS and consist of 202 frames.
 
 The example model is MONAI's UNet, the parameters of which are given below. A quick training was performed with the individual frames of all the vidoes in the 2017 EndoVis challenge. The training was quick and the results from the model aren't meant to be great, they're just there to give a rough idea. The training script can be found [here](https://github.com/rijobro/Tutorials/blob/video_seg/modules/video_seg.ipynb).
