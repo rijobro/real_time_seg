@@ -1,6 +1,6 @@
 # Real time segmentation (and a bit of optical flow)
 
-A few small scripts that take a torch.jit model and perform segmentation/optical flow.
+A few small scripts that take a `torch.jit` model and perform segmentation/optical flow.
 
 # Data
 The example [video](example_data/videos/d1_im.mp4) and its corresponding [ground truth label](example_data/videos/d1_seg.mp4) were taken from the 2017 MICCAI EndoVis Grand Challenge. They are at 2 FPS and consist of 202 frames.
