@@ -8,7 +8,7 @@ A few small scripts that take a `torch.jit` model and perform segmentation/optic
 
 The example [videos](example_data/videos) and their corresponding ground truth videos were taken from the 2017 MICCAI EndoVis Grand Challenge. They are at 2 FPS.
 
-The example model is MONAI's UNet, the parameters of which are given below. A training was performed with the individual frames of all the vidoes in the 2017 EndoVis challenge. The training script can be found [here](https://github.com/rijobro/Tutorials/blob/video_seg/modules/video_seg.ipynb).
+The example model is MONAI's UNet, the parameters of which are given below. A training was performed with the individual frames of all the vidoes in the 2017 EndoVis challenge over 200 epochs. The training script can be found [here](https://github.com/rijobro/Tutorials/blob/video_seg/modules/video_seg.ipynb).
 
 ```python
 UNet(
