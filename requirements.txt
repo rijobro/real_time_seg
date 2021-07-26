@@ -1,0 +1,7 @@
+matplotlib
+opencv-python
+torch
+monai
+synapseclient
+notebook
+scikit-learn
