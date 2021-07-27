@@ -9,13 +9,14 @@ import torch
 from torch.utils.data import IterableDataset
 
 from monai.networks.utils import eval_mode
-from monai.transforms import DivisiblePad, Compose, AsDiscrete, Activations, ScaleIntensity, ToTensor, AsChannelFirst
+from monai.transforms import DivisiblePad, Compose, AsDiscrete, Activations, ScaleIntensity, ToTensor, AsChannelFirst, Lambda
 
 class VideoDataset(IterableDataset):
     def __init__(self, video_source, divisible_pad_factor, device, max_num_loops):
         self.device = device
         self.transforms = Compose([
             AsChannelFirst(),
+            Lambda(lambda x: x[::-1,...]),
             DivisiblePad(divisible_pad_factor),
             ScaleIntensity(),
             ToTensor(),
@@ -124,7 +125,7 @@ def imshow(im, output, im_show_handles):
     out_np = normalise_to(as_numpy(output), 0, 1)
 
     # need to flip rgb because opencv is bgr
-    im_show_handles = imshows((im_np[...,::-1], out_np), ("im", "label"), im_show_handles)
+    im_show_handles = imshows((im_np, out_np), ("im", "label"), im_show_handles)
 
     return im_show_handles
 
