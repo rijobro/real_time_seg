@@ -114,7 +114,8 @@ def imshows(ims, names, im_show_handles):
 
 def imshow(im, output, im_show_handles):
     def as_numpy(im):
-        return np.moveaxis(im[0].detach().cpu().numpy(), 0, -1)
+        im = im[0].detach().cpu().numpy()
+        return im[0] if im.shape[0] == 1 else np.moveaxis(im, 0, -1)
 
     def normalise_to(a, _min, _max):
         return np.interp(a, (a.min(), a.max()), (_min, _max))
